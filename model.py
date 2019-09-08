@@ -20,17 +20,13 @@ def model_architecture():
 
     # with lambda normalization
     model.add(Lambda(lambda x: x/255.0, input_shape=SHAPE))
-    model.add(Conv2D(24, (3, 3), activation='relu'))
-
-    #without lambda normalization
-    #model.add(Conv2D(24, (3, 3), activation='relu', input_shape=SHAPE))
-
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(36, (3, 3), activation='relu'))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(48, (3, 3), activation='relu'))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(Conv2D(24, (2, 2), activation='elu'))
+    #model.add(MaxPooling2D((2, 2)))
+    model.add(Conv2D(36, (2, 2), activation='elu'))
+    #model.add(MaxPooling2D((2, 2)))
+    model.add(Conv2D(48, (2, 2), activation='elu'))
+    #model.add(MaxPooling2D((2, 2)))
+    model.add(Conv2D(64, (2, 2), activation='elu'))
     model.add(Flatten())
     model.add(Dense(100, activation='relu'))
     model.add(Dense(24, activation='relu'))
@@ -95,7 +91,7 @@ def train(data_df, model, validation_percentage=0.2):
 if __name__ == "__main__":
     model = model_architecture()
 
-    data = pd.read_csv(('train_responses.csv'), names=['id', 'corr'])
-    data["id"] = data["id"].apply(lambda path: path + ".png")
-    train(data, model)
-    model.save("model.h5")
+    # data = pd.read_csv(('train_responses.csv'), names=['id', 'corr'])
+    # data["id"] = data["id"].apply(lambda path: path + ".png")
+    # train(data, model)
+    # model.save("model.h5")
