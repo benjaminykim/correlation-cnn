@@ -15,22 +15,33 @@ SHAPE = (127, 127, 1)
 BATCH_SIZE = 200
 INPUT_SHAPE = (BATCH_SIZE, SHAPE)
 
-def model_architecture():
+def construct_model_architecture():
     model = Sequential()
 
     # with lambda normalization
     model.add(Lambda(lambda x: x/255.0, input_shape=SHAPE))
-    model.add(Conv2D(24, (2, 2), activation='elu'))
-    #model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(36, (2, 2), activation='elu'))
-    #model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(48, (2, 2), activation='elu'))
-    #model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(64, (2, 2), activation='elu'))
+    model.add(Conv2D(filters=8,
+                    kernel_size=(2, 2),
+                    padding='same',
+                    activation='relu'))
+    # model.add(Conv2D(filters=8,
+    #                 kernel_size=(2, 2),
+    #                 padding='same',
+    #                 activation='relu'))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Conv2D(filters=16,
+                    kernel_size=(2, 2),
+                    padding='same',
+                    activation='relu'))
+    # model.add(Conv2D(filters=16,
+    #                 kernel_size=(2, 2),
+    #                 padding='same',
+    #                 activation='relu'))
+    model.add(MaxPooling2D((2, 2)))
     model.add(Flatten())
     model.add(Dense(100, activation='relu'))
     model.add(Dense(24, activation='relu'))
-    model.add(Dense(10, activation='sigmoid'))
+    model.add(Dense(10, activation='tanh'))
     model.add(Dense(1))
     model.summary()
     return model
@@ -51,11 +62,9 @@ def train(data_df, model, validation_percentage=0.2):
 
     train, test = train_test_split(data_df, test_size=0.2)
 
-    train_datagen = ImageDataGenerator(
-        rescale=1./255)
+    train_datagen = ImageDataGenerator()
 
-    validation_datagen = ImageDataGenerator(
-        rescale=1./255)
+    validation_datagen = ImageDataGenerator()
 
     train_generator = train_datagen.flow_from_dataframe(
             dataframe=train,
@@ -64,7 +73,7 @@ def train(data_df, model, validation_percentage=0.2):
             y_col='corr',
             target_size=(127, 127),
             color_mode='grayscale',
-            class_mode='sparse'
+            class_mode='other'
     )
 
     validation_generator = validation_datagen.flow_from_dataframe(
@@ -74,7 +83,7 @@ def train(data_df, model, validation_percentage=0.2):
             y_col='corr',
             target_size=(127, 127),
             color_mode='grayscale',
-            class_mode='sparse'
+            class_mode='other'
     )
 
     model.fit_generator(
@@ -87,11 +96,15 @@ def train(data_df, model, validation_percentage=0.2):
             validation_steps=200,
             use_multiprocessing=False
             )
+    model.save("model.h5")
+
+def preprocess_data():
+    data = pd.read_csv(('train_responses.csv'), names=['id', 'corr'], header=0)
+    data["id"] = data["id"].apply(lambda path: path + ".png")
+    data['corr'] = data['corr'].astype('float')
+    return data
 
 if __name__ == "__main__":
-    model = model_architecture()
-
-    # data = pd.read_csv(('train_responses.csv'), names=['id', 'corr'])
-    # data["id"] = data["id"].apply(lambda path: path + ".png")
-    # train(data, model)
-    # model.save("model.h5")
+    data = preprocess_data()
+    model = construct_model_architecture()
+    train(data, model)
