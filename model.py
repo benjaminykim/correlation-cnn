@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 from keras.models import Sequential
-from keras.layers import Lambda, Conv2D, MaxPooling2D, Flatten, Dense
+from keras.layers import Lambda, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.preprocessing.image import ImageDataGenerator
 from keras import optimizers
@@ -16,23 +16,26 @@ def preprocess_data():
     data["id"] = data["id"].apply(lambda path: path + ".png")
     data['corr'] = data['corr'].astype('float')
     return data
+
 def construct_model_architecture():
     model = Sequential()
     model.add(Lambda(lambda x: x/255.0, input_shape=SHAPE))
     model.add(Conv2D(filters=8,
-                    kernel_size=(2, 2),
+                    kernel_size=(5, 5),
+                    strides=2,
                     padding='same',
                     activation='relu'))
     model.add(MaxPooling2D((2, 2)))
     model.add(Conv2D(filters=16,
-                    kernel_size=(2, 2),
+                    kernel_size=(3, 3),
                     padding='same',
                     activation='relu'))
     model.add(MaxPooling2D((2, 2)))
     model.add(Flatten())
-    model.add(Dense(100, activation='relu'))
-    model.add(Dense(24, activation='relu'))
-    model.add(Dense(10, activation='tanh'))
+    model.add(Dropout(0.15))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(16, activation='tanh'))
     model.add(Dense(1))
     model.summary()
     return model
@@ -68,18 +71,18 @@ def train(data, model):
     train_generator, validation_generator = get_generator(data)
 
     save_checkpoint = ModelCheckpoint(
-            'model-{epoch:02d}-{val_loss:.2f}.h5',
+            'best-model-{epoch:02d}-{val_loss:.2f}.h5',
             monitor='val_loss',
             save_best_only=True,
             mode='min')
 
     early_stoppage = EarlyStopping(
             monitor='val_loss',
-            min_delta=0.01,
+            min_delta=0.003,
             mode='min',
             patience=2)
 
-    optimizer = optimizers.Adam(lr=0.0001)
+    optimizer = optimizers.Adam(lr=0.001)
     model.compile(
             optimizer=optimizer,
             loss='mean_absolute_error')
