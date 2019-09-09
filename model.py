@@ -4,17 +4,18 @@ import os
 from keras.models import Sequential
 from keras.layers import Lambda, Conv2D, MaxPooling2D, Flatten, Dense
 from keras.callbacks import ModelCheckpoint, EarlyStopping
-from keras import optimizers
 from keras.preprocessing.image import ImageDataGenerator
+from keras import optimizers
 from sklearn.model_selection import train_test_split
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-# shape of input data
 SHAPE = (127, 127, 1)
-BATCH_SIZE = 200
-INPUT_SHAPE = (BATCH_SIZE, SHAPE)
 
+def preprocess_data():
+    data = pd.read_csv(('train_responses.csv'), names=['id', 'corr'], header=0)
+    data["id"] = data["id"].apply(lambda path: path + ".png")
+    data['corr'] = data['corr'].astype('float')
+    return data
 def construct_model_architecture():
     model = Sequential()
     model.add(Lambda(lambda x: x/255.0, input_shape=SHAPE))
@@ -37,8 +38,9 @@ def construct_model_architecture():
     return model
 
 def get_generator(data):
+    # shuffle dataframe and partition train/test dataset
     data = data.sample(len(data), random_state=0)
-    train, test = train_test_split(data, test_size=0.2)      # randomly select test dataset
+    train, test = train_test_split(data, test_size=0.2)
 
     train_datagen = ImageDataGenerator()
     train_generator = train_datagen.flow_from_dataframe(
@@ -48,8 +50,7 @@ def get_generator(data):
             y_col='corr',
             target_size=(127, 127),
             color_mode='grayscale',
-            class_mode='other'
-    )
+            class_mode='other')
 
     validation_datagen = ImageDataGenerator()
     validation_generator = validation_datagen.flow_from_dataframe(
@@ -59,8 +60,7 @@ def get_generator(data):
             y_col='corr',
             target_size=(127, 127),
             color_mode='grayscale',
-            class_mode='other'
-    )
+            class_mode='other')
 
     return train_generator, validation_generator
 
@@ -79,9 +79,9 @@ def train(data, model):
             mode='min',
             patience=2)
 
-    adam = optimizers.Adam(lr=0.0001)
+    optimizer = optimizers.Adam(lr=0.0001)
     model.compile(
-            optimizer=adam,
+            optimizer=optimizer,
             loss='mean_absolute_error')
 
     model.fit_generator(
@@ -91,14 +91,7 @@ def train(data, model):
             verbose=1,
             callbacks=[save_checkpoint, early_stoppage],
             validation_data=validation_generator,
-            validation_steps=200
-            )
-
-def preprocess_data():
-    data = pd.read_csv(('train_responses.csv'), names=['id', 'corr'], header=0)
-    data["id"] = data["id"].apply(lambda path: path + ".png")
-    data['corr'] = data['corr'].astype('float')
-    return data
+            validation_steps=200)
 
 if __name__ == "__main__":
     data = preprocess_data()
