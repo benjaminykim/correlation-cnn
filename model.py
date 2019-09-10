@@ -89,12 +89,12 @@ def train(data, model):
 
     model.fit_generator(
             train_generator,
-            steps_per_epoch=1000,
+            steps_per_epoch=10000,
             epochs=10,
             verbose=1,
             callbacks=[save_checkpoint, early_stoppage],
             validation_data=validation_generator,
-            validation_steps=200)
+            validation_steps=3000)
 
 if __name__ == "__main__":
     data = preprocess_data()
